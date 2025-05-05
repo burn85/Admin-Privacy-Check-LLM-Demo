@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}가상 Admin Tool{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 기본 스타일 */
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar { width: 250px; }
+        .content { flex: 1; }
+        /* 테이블 스타일 */
+        th, td { padding: 12px 15px; text-align: left; }
+        thead th { background-color: #f3f4f6; font-weight: 600; color: #4b5563; }
+        tbody tr:nth-child(even) { background-color: #f9fafb; }
+        tbody tr:hover { background-color: #f0f9ff; }
+        /* 버튼 스타일 */
+        .btn {
+            padding: 8px 16px; border-radius: 6px; font-weight: 500;
+            cursor: pointer; transition: background-color 0.2s;
+            display: inline-flex; /* 아이콘과 텍스트 정렬 위해 */
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
+        }
+        .btn-primary { background-color: #2563eb; color: white; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover { background-color: #059669; }
+        .btn-warning { background-color: #f59e0b; color: white; }
+        .btn-warning:hover { background-color: #d97706; }
+        .btn-secondary { background-color: #e5e7eb; color: #374151; }
+        .btn-secondary:hover { background-color: #d1d5db; }
+        /* 마스킹된 텍스트 스타일 */
+        .masked-text {
+            background-color: #e5e7eb;
+            color: #6b7280;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+            display: inline-block; /* 배경색 적용 위해 */
+        }
+        /* 입력 필드 스타일 */
+        .form-input, .form-select {
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            padding: 8px 12px;
+            border-radius: 6px; /* rounded-md */
+            width: 100%;
+            margin-top: 0.25rem; /* mt-1 */
+        }
+        .form-select {
+            background-color: white;
+            appearance: none; /* 기본 드롭다운 화살표 제거 (선택적) */
+            background-image: url("data:image/svg+xml,%3csvg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; /* 화살표 공간 확보 */
+        }
+        /* 수정 모드 라벨 스타일 */
+        .edit-mode-label::after {
+            content: " (수정 가능)";
+            font-size: 0.8em;
+            color: #f59e0b;
+            margin-left: 4px;
+        }
+        /* 보기 모드 필드 스타일 (읽기 전용 포함) */
+        .view-field {
+             margin-top: 0.25rem; /* mt-1 */
+             display: block;
+             width: 100%;
+             padding: 8px 12px; /* form-input과 동일한 패딩 */
+             border-radius: 6px; /* rounded-md */
+             border: 1px solid #d1d5db; /* border-gray-300 */
+             min-height: 42px; /* input 높이와 맞추기 */
+             box-sizing: border-box; /* 패딩 포함 크기 계산 */
+             line-height: 1.5; /* 텍스트 세로 정렬 */
+        }
+        .read-only-field {
+             background-color: #f3f4f6; /* bg-gray-100 */
+             color: #6b7280; /* text-gray-500 */
+             cursor: not-allowed;
+        }
+        .mono-font {
+            font-family: monospace;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <aside class="sidebar bg-white p-6 shadow-md flex flex-col">
+            <h1 class="text-2xl font-bold mb-8 text-blue-600">Admin 관리</h1>
+            <nav class="flex-1">
+                <ul>
+                    <li class="mb-4"><a href="{{ url_for('user_management') }}" class="text-gray-700 hover:text-blue-600 font-medium block p-2 rounded {% if request.endpoint == 'user_management' %}bg-blue-100{% endif %}">사용자 관리</a></li>
+                    <li class="mb-4"><a href="#" class="text-gray-700 hover:text-blue-600 font-medium block p-2 rounded">서비스 관리</a></li>
+                    <li class="mb-4"><a href="#" class="text-gray-700 hover:text-blue-600 font-medium block p-2 rounded">로그 조회</a></li>
+                    <li class="mb-4"><a href="#" class="text-gray-700 hover:text-blue-600 font-medium block p-2 rounded">설정</a></li>
+                </ul>
+            </nav>
+            <div class="mt-auto">
+                <p class="text-sm text-gray-500">로그인: admin_user</p>
+            </div>
+        </aside>
+
+        <main class="content p-8 overflow-y-auto">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

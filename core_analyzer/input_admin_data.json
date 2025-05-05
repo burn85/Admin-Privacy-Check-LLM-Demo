@@ -1,0 +1,87 @@
+{
+    "actions": [
+      {
+        "action_name": "download_user_data_encrypted",
+        "download_encryption": "AES-256",
+        "enabled": true,
+        "required_permission": "download_user_detail"
+      },
+      {
+        "action_name": "download_user_data_unencrypted",
+        "download_encryption": null,
+        "enabled": true,
+        "required_permission": "download_user_detail_unencrypted"
+      },
+      {
+        "action_name": "modify_user_info",
+        "enabled": true,
+        "required_permission": "update_user"
+      },
+      {
+        "action_name": "close_details",
+        "enabled": true
+      }
+    ],
+    "fields": [
+      {
+        "field_name": "user_id",
+        "masked": false,
+        "pii_type": "id",
+        "value_example": "user001",
+        "visible": true
+      },
+      {
+        "field_name": "user_name",
+        "masked": false,
+        "pii_type": "name",
+        "value_example": "문인나",
+        "visible": true
+      },
+      {
+        "field_name": "email",
+        "masked": false,
+        "pii_type": "email",
+        "value_example": "userinna@example.com",
+        "visible": true
+      },
+      {
+        "field_name": "phone",
+        "masked": true,
+        "masking_rule": "010-****-xxxx",
+        "pii_type": "phone",
+        "value_example": "010-****-5678",
+        "visible": true
+      },
+      {
+        "field_name": "address",
+        "masked": false,
+        "pii_type": "address",
+        "value_example": "서울시 강남구 테헤란로 123",
+        "visible": true
+      },
+      {
+        "field_name": "join_date",
+        "masked": false,
+        "pii_type": "date",
+        "value_example": "2023-01-15",
+        "visible": true
+      },
+      {
+        "field_name": "last_login",
+        "masked": false,
+        "pii_type": "date",
+        "value_example": "2025-04-29",
+        "visible": true
+      },
+      {
+        "field_name": "status",
+        "masked": false,
+        "pii_type": "status",
+        "value_example": "활성",
+        "visible": true
+      }
+    ],
+    "menu_id": "user_detail_view",
+    "menu_name": "사용자 상세 정보 조회",
+    "target_user_id": "user001"
+  }

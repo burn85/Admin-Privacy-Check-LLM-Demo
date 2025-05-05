@@ -1,0 +1,418 @@
+{% extends "layout.html" %}
+
+{% block title %}사용자 관리 - 가상 Admin Tool{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl font-semibold mb-6 text-gray-800">사용자 관리</h2>
+
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h3 class="text-xl font-semibold mb-4 text-gray-700">사용자 목록</h3>
+    <table id="user-list-table" class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+        <thead>
+            <tr>
+                <th>사용자 ID</th>
+                <th>이름 (마스킹)</th>
+                <th>이메일 (마스킹)</th>
+                <th>상태</th>
+                <th>액션</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+            {% for user_id, user in users.items() %}
+            <tr data-user-row-id="{{ user.user_id }}"> <td>{{ user.user_id }}</td>
+                <td class="user-masked-name"><span class="masked-text">{{ user.masked_name }}</span></td>
+                <td class="user-masked-email"><span class="masked-text">{{ user.masked_email }}</span></td>
+                <td class="user-status">
+                    {% if user.status == '활성' %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">활성</span>
+                    {% elif user.status == '휴면' %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">휴면</span>
+                    {% else %}
+                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ user.status }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-secondary text-sm" onclick="showUserDetails('{{ user.user_id }}')">상세보기</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="user-details-section" class="bg-white p-6 rounded-lg shadow-md hidden" data-user-id="">
+    <h3 class="text-xl font-semibold mb-4 text-gray-700">사용자 상세 정보 (<span id="detail-user-id" class="font-mono"></span>)</h3>
+    <form id="user-detail-form">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">사용자 ID</label>
+                <span id="detail-field-user_id" class="view-field read-only-field mono-font"></span>
+            </div>
+            <div>
+                <label for="detail-input-user_name" class="block text-sm font-medium text-gray-700">이름</label>
+                <span id="detail-field-user_name" class="view-field"></span>
+                <input type="text" id="detail-input-user_name" name="user_name" class="form-input hidden">
+            </div>
+             <div>
+                <label for="detail-input-email" class="block text-sm font-medium text-gray-700">이메일</label>
+                <span id="detail-field-email" class="view-field mono-font"></span>
+                 <input type="email" id="detail-input-email" name="email" class="form-input hidden">
+            </div>
+            <div>
+                <label for="detail-input-phone" class="block text-sm font-medium text-gray-700">연락처</label>
+                <span id="detail-field-phone" class="view-field mono-font masked-text"></span>
+                 <input type="tel" id="detail-input-phone" name="phone" class="form-input hidden" placeholder="예: 010-1234-5678">
+            </div>
+             <div>
+                <label for="detail-input-address" class="block text-sm font-medium text-gray-700">주소</label>
+                <span id="detail-field-address" class="view-field"></span>
+                <input type="text" id="detail-input-address" name="address" class="form-input hidden">
+            </div>
+             <div>
+                <label class="block text-sm font-medium text-gray-700">가입일</label>
+                <span id="detail-field-join_date" class="view-field read-only-field mono-font"></span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">마지막 접속일</label>
+                <span id="detail-field-last_login" class="view-field read-only-field mono-font"></span>
+            </div>
+             <div>
+                <label for="detail-select-status" class="block text-sm font-medium text-gray-700">계정 상태</label>
+                <span id="detail-field-status" class="view-field"></span>
+                 <select id="detail-select-status" name="status" class="form-select hidden">
+                    <option value="활성">활성</option>
+                    <option value="휴면">휴면</option>
+                    <option value="정지">정지</option>
+                 </select>
+            </div>
+        </div>
+    </form>
+
+    <div class="mt-6 border-t pt-6 flex justify-end space-x-3">
+        <div id="view-mode-buttons">
+             <button type="button" class="btn btn-warning" onclick="enableEditMode()">수정하기</button>
+             <button class="btn btn-primary" onclick="alert('사용자 데이터 다운로드 요청됨 (암호화: AES-256)')">
+                데이터 다운로드 (암호화됨: AES-256)
+             </button>
+             <button class="btn btn-secondary" onclick="alert('사용자 데이터 다운로드 요청됨 (암호화 안됨!)')">
+                데이터 다운로드 (암호화 안됨)
+             </button>
+             <button type="button" class="btn btn-secondary" onclick="hideUserDetails()">닫기</button>
+        </div>
+        <div id="edit-mode-buttons" class="hidden">
+             <button type="button" class="btn btn-success" onclick="saveUserDetails()">변경사항 저장</button>
+             <button type="button" class="btn btn-secondary" onclick="cancelEditMode()">취소</button>
+        </div>
+    </div>
+
+     <div class="mt-6 p-4 bg-gray-50 rounded border border-dashed border-gray-300">
+        <h4 class="font-semibold text-sm text-gray-600 mb-2">JSON 표현 예시 (for Auto-Checker Input)</h4>
+        <pre class="text-xs text-gray-700 overflow-x-auto bg-white p-3 rounded"><code id="json-representation">데이터 로딩 중...</code></pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let originalUserData = {}; // 수정 취소 시 복원을 위한 원본 데이터 저장
+
+    // 사용자 상세 정보 표시 함수
+    async function showUserDetails(userId) {
+        try {
+            const response = await fetch(`/get_user_details/${userId}`);
+            if (!response.ok) {
+                let errorMsg = `HTTP error! status: ${response.status}`;
+                try { const errorJson = await response.json(); errorMsg = errorJson.error || errorMsg; } catch (e) {}
+                throw new Error(errorMsg);
+            }
+            const user = await response.json();
+            if (user.error) { alert(user.error); return; }
+
+            // 원본 데이터 저장 (수정 폼 채우기 위해 unmasked 값 포함)
+            originalUserData = {
+                user_id: user.user_id,
+                user_name: user.user_name,
+                email: user.email, // 원본 이메일
+                masked_email: user.masked_email, // 마스킹된 이메일 (표시용)
+                phone: user.phone, // 원본 연락처
+                masked_phone: user.masked_phone, // 마스킹된 연락처 (표시용)
+                address: user.address,
+                join_date: user.join_date,
+                last_login: user.last_login,
+                status: user.status,
+                json_representation: user.json_representation
+            };
+
+            const section = document.getElementById('user-details-section');
+            section.dataset.userId = userId;
+            section.classList.remove('hidden');
+
+            populateFormFields(originalUserData, false); // 조회 모드로 데이터 채우기
+
+            document.getElementById('json-representation').textContent = JSON.stringify(user.json_representation, null, 2);
+            switchToViewMode();
+            section.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            alert(`사용자 정보를 불러오는 중 오류가 발생했습니다: ${error.message}`);
+        }
+    }
+
+    // 폼 필드 채우기 함수
+    function populateFormFields(user, isEditMode) {
+        document.getElementById('detail-field-user_id').textContent = user.user_id;
+        document.getElementById('detail-user-id').textContent = user.user_id;
+        // 이름
+        document.getElementById('detail-field-user_name').textContent = user.user_name;
+        document.getElementById('detail-input-user_name').value = user.user_name;
+        // 이메일
+        document.getElementById('detail-field-email').textContent = user.masked_email; // 조회 시 마스킹된 이메일
+        document.getElementById('detail-input-email').value = user.email; // 수정 시 원본 이메일
+        // 연락처
+        document.getElementById('detail-field-phone').textContent = user.masked_phone; // 조회 시 마스킹된 연락처
+        document.getElementById('detail-input-phone').value = user.phone || ''; // 수정 시 원본 연락처 (null일 경우 빈 문자열)
+        // 주소
+        document.getElementById('detail-field-address').textContent = user.address;
+        document.getElementById('detail-input-address').value = user.address;
+        // 가입일 (읽기 전용)
+        document.getElementById('detail-field-join_date').textContent = user.join_date;
+        // 마지막 접속일 (읽기 전용)
+        document.getElementById('detail-field-last_login').textContent = user.last_login;
+        // 상태
+        document.getElementById('detail-field-status').textContent = user.status;
+        document.getElementById('detail-select-status').value = user.status;
+
+        toggleEditFields(isEditMode);
+    }
+
+    // 수정 모드 활성화
+    function enableEditMode() {
+        toggleEditFields(true);
+        document.getElementById('view-mode-buttons').classList.add('hidden');
+        document.getElementById('edit-mode-buttons').classList.remove('hidden');
+    }
+
+    // 수정 모드 취소
+    function cancelEditMode() {
+        populateFormFields(originalUserData, false);
+        switchToViewMode();
+    }
+
+     // 조회 모드로 전환 (버튼 상태)
+    function switchToViewMode() {
+        document.getElementById('view-mode-buttons').classList.remove('hidden');
+        document.getElementById('edit-mode-buttons').classList.add('hidden');
+        toggleEditFields(false);
+    }
+
+
+    // 수정 가능 필드 표시/숨김 토글
+    function toggleEditFields(isEditMode) {
+        // 수정 가능한 필드 목록 업데이트
+        const fieldsToToggle = ['user_name', 'email', 'phone', 'address', 'status'];
+        fieldsToToggle.forEach(fieldName => {
+            const spanElement = document.getElementById(`detail-field-${fieldName}`);
+            const inputElement = fieldName === 'status'
+                ? document.getElementById(`detail-select-${fieldName}`)
+                : document.getElementById(`detail-input-${fieldName}`);
+            const labelElement = document.querySelector(`label[for='detail-${fieldName === 'status' ? 'select' : 'input'}-${fieldName}']`);
+
+            if (spanElement && inputElement) {
+                spanElement.classList.toggle('hidden', isEditMode);
+                inputElement.classList.toggle('hidden', !isEditMode);
+            }
+             if (labelElement) {
+                // 읽기 전용 필드는 라벨에 표시 안 함
+                const readOnlyFields = ['user_id', 'join_date', 'last_login'];
+                if (!readOnlyFields.includes(fieldName)) {
+                     labelElement.classList.toggle('edit-mode-label', isEditMode);
+                }
+            }
+        });
+         // 읽기 전용 필드 처리 (항상 span만 보이도록)
+        const readOnlyFields = ['user_id', 'join_date', 'last_login'];
+         readOnlyFields.forEach(fieldName => {
+             const spanElement = document.getElementById(`detail-field-${fieldName}`);
+             if(spanElement) spanElement.classList.remove('hidden');
+             // 해당 input 요소가 있다면 숨김 (혹시 모를 경우 대비)
+             const inputElement = document.getElementById(`detail-input-${fieldName}`);
+             if(inputElement) inputElement.classList.add('hidden');
+         });
+
+         // 연락처, 이메일 필드는 조회 모드일 때 masked-text 클래스 추가/제거
+         const phoneSpan = document.getElementById('detail-field-phone');
+         if (phoneSpan) {
+             phoneSpan.classList.toggle('masked-text', !isEditMode);
+             // 조회 모드 시 view-field 스타일 적용, 수정 모드 시 제거
+             phoneSpan.classList.toggle('view-field', !isEditMode);
+         }
+         const emailSpan = document.getElementById('detail-field-email');
+         if (emailSpan) {
+             emailSpan.classList.toggle('masked-text', !isEditMode);
+             emailSpan.classList.toggle('mono-font', !isEditMode); // 마스킹 시 mono 폰트 적용
+             // 조회 모드 시 view-field 스타일 적용, 수정 모드 시 제거
+             emailSpan.classList.toggle('view-field', !isEditMode);
+         }
+         // 이름, 주소, 상태 필드도 조회 모드일 때 view-field 스타일 적용
+         const otherViewFields = ['user_name', 'address', 'status'];
+         otherViewFields.forEach(fieldName => {
+            const spanElement = document.getElementById(`detail-field-${fieldName}`);
+            if (spanElement) {
+                spanElement.classList.toggle('view-field', !isEditMode);
+            }
+         });
+    }
+
+    // 사용자 정보 저장 함수
+    async function saveUserDetails() {
+        const section = document.getElementById('user-details-section');
+        const userId = section.dataset.userId;
+        if (!userId) {
+            alert("사용자 ID를 찾을 수 없습니다.");
+            return;
+        }
+
+        // 폼 데이터 가져오기 (이메일, 연락처 추가)
+        const updatedData = {
+            user_name: document.getElementById('detail-input-user_name').value,
+            email: document.getElementById('detail-input-email').value,
+            phone: document.getElementById('detail-input-phone').value,
+            address: document.getElementById('detail-input-address').value,
+            status: document.getElementById('detail-select-status').value
+        };
+
+        // 서버에 업데이트 요청 보내기
+        try {
+            const response = await fetch(`/update_user/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', },
+                body: JSON.stringify(updatedData),
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                alert(result.message);
+                // 성공 시: 최신 정보로 원본 데이터 및 화면 업데이트
+                originalUserData = {
+                    ...originalUserData,
+                    user_name: updatedData.user_name,
+                    email: updatedData.email, // 원본 이메일 업데이트
+                    phone: updatedData.phone, // 원본 연락처 업데이트
+                    address: updatedData.address,
+                    status: updatedData.status,
+                    // 서버 응답에서 마스킹된 값 업데이트
+                    masked_name: result.updated_user?.masked_name || maskClientSideName(updatedData.user_name), // 이름 마스킹 추가
+                    masked_email: result.updated_user?.masked_email || maskClientSideEmail(updatedData.email),
+                    masked_phone: result.updated_user?.masked_phone || maskClientSidePhone(updatedData.phone),
+                };
+
+                // JSON 표현 업데이트 (클라이언트에서 재생성)
+                originalUserData.json_representation = generateClientSideJsonRepresentation(originalUserData);
+                document.getElementById('json-representation').textContent = JSON.stringify(originalUserData.json_representation, null, 2);
+
+                populateFormFields(originalUserData, false); // 조회 모드로 필드 업데이트
+                switchToViewMode(); // 버튼 상태 변경
+
+                // 목록 테이블 업데이트
+                updateUserListRow(userId, result.updated_user);
+
+            } else {
+                 // 서버에서 보낸 구체적인 오류 메시지 표시
+                alert(`오류 발생: ${result.error || '알 수 없는 오류'}`);
+            }
+        } catch (error) {
+            console.error('Error updating user details:', error);
+            alert('사용자 정보 업데이트 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 사용자 목록 행 업데이트 함수
+    function updateUserListRow(userId, updatedUserInfo) {
+        if (!updatedUserInfo) return;
+
+        const row = document.querySelector(`#user-list-table tbody tr[data-user-row-id="${userId}"]`);
+        if (row) {
+            // 이름 (마스킹) 업데이트
+            const nameCell = row.querySelector('.user-masked-name .masked-text');
+            if (nameCell) nameCell.textContent = updatedUserInfo.masked_name;
+
+            // 이메일 (마스킹) 업데이트 추가
+            const emailCell = row.querySelector('.user-masked-email .masked-text');
+            if (emailCell) emailCell.textContent = updatedUserInfo.masked_email;
+
+            // 상태 업데이트
+            const statusCell = row.querySelector('.user-status');
+            if (statusCell) {
+                let statusSpan;
+                if (updatedUserInfo.status === '활성') {
+                    statusSpan = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">활성</span>';
+                } else if (updatedUserInfo.status === '휴면') {
+                    statusSpan = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">휴면</span>';
+                } else {
+                     statusSpan = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">${updatedUserInfo.status}</span>`;
+                }
+                statusCell.innerHTML = statusSpan;
+            }
+        }
+    }
+
+     // 클라이언트 측에서 JSON 표현 생성 (서버 로직과 유사하게)
+    function generateClientSideJsonRepresentation(user) {
+        const state = {
+            menu_id: "user_detail_view",
+            menu_name: "사용자 상세 정보 조회",
+            target_user_id: user.user_id,
+            fields: [
+                {"field_name": "user_id", "pii_type": "id", "visible": true, "masked": false, "value_example": user.user_id},
+                {"field_name": "user_name", "pii_type": "name", "visible": true, "masked": false, "value_example": user.user_name},
+                {"field_name": "email", "pii_type": "email", "visible": true, "masked": false, "value_example": user.email}, // 원본 이메일
+                {"field_name": "phone", "pii_type": "phone", "visible": true, "masked": true, "masking_rule": "010-****-xxxx", "value_example": user.masked_phone}, // 마스킹된 폰
+                {"field_name": "address", "pii_type": "address", "visible": true, "masked": false, "value_example": user.address},
+                {"field_name": "join_date", "pii_type": "date", "visible": true, "masked": false, "value_example": user.join_date},
+                {"field_name": "last_login", "pii_type": "date", "visible": true, "masked": false, "value_example": user.last_login},
+                {"field_name": "status", "pii_type": "status", "visible": true, "masked": false, "value_example": user.status}
+            ],
+            actions: [
+                {"action_name": "download_user_data_encrypted", "enabled": true, "required_permission": "download_user_detail", "download_encryption": "AES-256"},
+                {"action_name": "download_user_data_unencrypted", "enabled": true, "required_permission": "download_user_detail_unencrypted", "download_encryption": null},
+                {"action_name": "modify_user_info", "enabled": true, "required_permission": "update_user"},
+                {"action_name": "close_details", "enabled": true}
+            ]
+        };
+        return state;
+    }
+
+    // 클라이언트 측 마스킹 함수 (서버 로직과 유사하게) - 서버 응답 지연 시 대비
+    function maskClientSideName(name) { // 이름 마스킹 함수 추가
+        if (name.length > 2) {
+            return `${name[0]}${'*'.repeat(name.length - 2)}${name[name.length - 1]}`;
+        } else if (name.length === 2) {
+            return `${name[0]}*`;
+        }
+        return name;
+    }
+    function maskClientSideEmail(email) {
+        const parts = email.split('@');
+        if (parts.length === 2 && parts[0].length > 3) {
+            return `${parts[0].substring(0, 3)}${'*'.repeat(parts[0].length - 3)}@${parts[1]}`;
+        }
+        return email;
+    }
+    function maskClientSidePhone(phone) {
+        if (!phone) return ''; // Null 또는 빈 문자열 처리
+        const cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length === 11) return `${cleaned.substring(0, 3)}-****-${cleaned.substring(7)}`;
+        if (cleaned.length === 10) return `${cleaned.substring(0, 3)}-***-${cleaned.substring(6)}`;
+        return cleaned.length > 4 ? `${cleaned.slice(0, -4)}****` : '****';
+    }
+
+
+    // 사용자 상세 정보 숨김 함수
+    function hideUserDetails() {
+        document.getElementById('user-details-section').classList.add('hidden');
+        switchToViewMode(); // 닫을 때 항상 조회 모드로
+    }
+</script>
+{% endblock %}
